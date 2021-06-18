@@ -10,10 +10,52 @@ const io = require('socket.io')(PORT, {
         origin: "*",
     }
 });
+const cors = require('cors');
+const User = require('./models/user.js');
+app.use(cors());
+app.use(express.json());
 
-const gifs = io.of('/gifs');
+app.get('/profile', getUser)
+app.post('/profile/:id', editUser)
+app.delete('/profile/:id', deleteEl)
+
+const getUser = async (req, res) => {
+    let user = req.query.email;
+    User.find({user}, function (err, use){    //user MODEL
+        if (err){return console.error(err)}
+        if (!use[0]){
+            const newUser = new User({
+                email: user, 
+                favorites: [],
+                friends:[],
+                created: new Date(),
+            })
+            newUser.save(() => console.log("saving ", newUser))
+            res.status(201).send(newUser);
+        }else{
+            res.status(200).send(use[0]);
+        }
+    })  
+}
+
+
+
+//connection to database
+const DATABASE = process.env.MONGO_URL
+const mongoose = require('mongoose');
+mongoose.connect(DATABASE, { useNewUrlParser: true, useUnifiedTopology: true });
+const db = mongoose.connection;
+db.on('error', console.error.bind(console, 'connection error:'));
+db.once('open', function () {
+  console.log('connected to the database!');
+});
+
+
+
+
 
 //Holds participants in each room
+const gifs = io.of('/gifs');
 const gifsRooms = {};
 
 gifs.on('connection', socket => {
