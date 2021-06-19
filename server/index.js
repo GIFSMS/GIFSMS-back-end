@@ -1,23 +1,22 @@
 'use strict';
 
+require('dotenv').config();
 const PORT = process.env.PORT || 3001;
+const PORTER = process.env.PORTER || 8001
 const http = require('http');
 const express = require('express');
 const app = express();
+const otherApp = express();
 const server = http.createServer(app);
+const cors = require('cors');
 const io = require('socket.io')(PORT, {
     cors: {
         origin: "*",
     }
 });
-const cors = require('cors');
 const User = require('./models/user.js');
-app.use(cors());
-app.use(express.json());
-
-app.get('/profile', getUser)
-app.post('/profile/:id', editUser)
-app.delete('/profile/:id', deleteEl)
+otherApp.use(cors());
+otherApp.use(express.json());
 
 const getUser = async (req, res) => {
     let user = req.query.email;
@@ -37,6 +36,10 @@ const getUser = async (req, res) => {
         }
     })  
 }
+otherApp.get('/profile', getUser);
+// app.post('/profile/:id', editUser)
+// app.delete('/profile/:id', deleteEl)
+
 
 
 
@@ -59,10 +62,14 @@ const gifs = io.of('/gifs');
 const gifsRooms = {};
 
 gifs.on('connection', socket => {
+
+
+
     // console.log('User Joined Chat:' + socket.id);
 
     //Function to have users join rooms
     socket.on('join', payload => {
+
         //Initiates list of participants in specific rooms
         //If the room exists, push the joining user in the room array
         if (payload.room in gifsRooms) {
@@ -93,6 +100,29 @@ gifs.on('connection', socket => {
         gifs.emit('get rooms', { rooms });
     });
 
+    socket.io('logingif', payload => {
+        let user = payload.user
+        console.log("IN LOGIN: ", payload)
+        User.find({user}, function (err, userer){
+                if (err){return console.error(err)}
+                if (!userer[0]){
+                    const newUser = new User({
+                        email: user, 
+                        favorites: [],
+                        friends:[],
+                        created: new Date(),
+                    })
+                    newUser.save(() => console.log("saving ", newUser))
+                    gifs.to(payload.socketid).emit('profile', newUser)
+                }else{
+                    gifs.to(payload.socketid).emit('profile', userer[0])
+                }
+            }
+        
+
+
+    )})
+
 
     //listen to new messages from clients
     socket.on('message', payload => {
@@ -121,13 +151,13 @@ gifs.on('connection', socket => {
             }
         }
 
-        //Get List of rooms and send to all clients
+    //     //Get List of rooms and send to all clients
         let rooms = Object.keys(gifsRooms);
         gifs.emit('get rooms', { rooms });
 
-        //Handles removal of user from from
+    //     //Handles removal of user from from
         socket.leave(payload.room);
     });
 })
-
-server.listen(PORT);
+otherApp.listen(PORTER, () => console.log(`listening on ${PORTER}`));
+server.listen(3004, () => console.log(`listening on ${3004}`));
