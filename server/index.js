@@ -1,46 +1,17 @@
 'use strict';
 
 require('dotenv').config();
-const PORT = process.env.PORT || 3001;
-const PORTER = process.env.PORTER || 8001
+const PORT = process.env.PORT || 3002;
 const http = require('http');
 const express = require('express');
 const app = express();
-const otherApp = express();
 const server = http.createServer(app);
-const cors = require('cors');
 const io = require('socket.io')(PORT, {
     cors: {
         origin: "*",
     }
 });
 const User = require('./models/user.js');
-otherApp.use(cors());
-otherApp.use(express.json());
-
-// const getUser = async (req, res) => {
-//     let user = req.query.email;
-//     User.find({user}, function (err, use){    //user MODEL
-//         if (err){return console.error(err)}
-        
-//         if (!use[0]){
-//             const newUser = new User({
-//                 email: user, 
-//                 favorites: [],
-//                 friends:[],
-//                 created: new Date(),
-//             })
-//             newUser.save(() => console.log("saving ", newUser))
-//             res.status(201).send(newUser);
-//         }else{
-//             res.status(200).send(use[0]);
-//         }
-//     })  
-// }
-// otherApp.get('/profile', getUser);
-// app.post('/profile/:id', editUser)
-// app.delete('/profile/:id', deleteEl)
-
 
 
 
@@ -66,7 +37,7 @@ gifs.on('connection', socket => {
 
 
 
-    // console.log('User Joined Chat:' + socket.id);
+    console.log('User Joined Chat:' + socket.id);
 
     //Function to have users join rooms
     socket.on('join', payload => {
@@ -99,6 +70,9 @@ gifs.on('connection', socket => {
         //Get List of rooms and send to all clients
         let rooms = Object.keys(gifsRooms);
         gifs.emit('get rooms', { rooms });
+
+
+
     });
 
     socket.on('logingif', payload => {
@@ -122,10 +96,16 @@ gifs.on('connection', socket => {
                     gifs.emit('profile', userer[0])
                 }
             }
-        
-
-
     )})
+
+    socket.on('update', payload => {
+        User.findOneAndUpdate({email: payload.email}, function (err, update){
+            if(err){return console.error(err)}
+            update = {...update, ...payload}
+            console.log("UPDATING: ", update, payload)
+            update.save(()=> console.log("updated profile: ", update, payload))
+        })
+    })
 
 
     //listen to new messages from clients
@@ -133,7 +113,6 @@ gifs.on('connection', socket => {
         console.log("HELLO THERE MESSAGE:, ", payload)
         //push the message to all other clients
         gifs.in(payload.room).emit('message', payload);
-        console.log(payload);
     })
 
     //Handles users leaving rooms
@@ -164,5 +143,5 @@ gifs.on('connection', socket => {
         socket.leave(payload.room);
     });
 })
-otherApp.listen(PORTER, () => console.log(`listening on ${PORTER}`));
+// otherApp.listen(PORTER, () => console.log(`listening on ${PORTER}`));
 server.listen(3004, () => console.log(`listening on ${3004}`));

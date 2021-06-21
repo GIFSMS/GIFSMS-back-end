@@ -9,7 +9,6 @@ const HOST = process.env.HOSTT || "http://localhost:3004";
 const socket = io.connect(HOST + "/gifs");
 
 socket.emit('message', { message: "Test Message", user: "John" });
-// socket.emit('logingif', {user: "admin@admin.com"})
 
 const user = "Ted";
 const room = "My Private Room";
