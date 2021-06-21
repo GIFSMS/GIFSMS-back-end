@@ -18,25 +18,26 @@ const User = require('./models/user.js');
 otherApp.use(cors());
 otherApp.use(express.json());
 
-const getUser = async (req, res) => {
-    let user = req.query.email;
-    User.find({user}, function (err, use){    //user MODEL
-        if (err){return console.error(err)}
-        if (!use[0]){
-            const newUser = new User({
-                email: user, 
-                favorites: [],
-                friends:[],
-                created: new Date(),
-            })
-            newUser.save(() => console.log("saving ", newUser))
-            res.status(201).send(newUser);
-        }else{
-            res.status(200).send(use[0]);
-        }
-    })  
-}
-otherApp.get('/profile', getUser);
+// const getUser = async (req, res) => {
+//     let user = req.query.email;
+//     User.find({user}, function (err, use){    //user MODEL
+//         if (err){return console.error(err)}
+        
+//         if (!use[0]){
+//             const newUser = new User({
+//                 email: user, 
+//                 favorites: [],
+//                 friends:[],
+//                 created: new Date(),
+//             })
+//             newUser.save(() => console.log("saving ", newUser))
+//             res.status(201).send(newUser);
+//         }else{
+//             res.status(200).send(use[0]);
+//         }
+//     })  
+// }
+// otherApp.get('/profile', getUser);
 // app.post('/profile/:id', editUser)
 // app.delete('/profile/:id', deleteEl)
 
@@ -100,11 +101,12 @@ gifs.on('connection', socket => {
         gifs.emit('get rooms', { rooms });
     });
 
-    socket.io('logingif', payload => {
+    socket.on('logingif', payload => {
         let user = payload.user
         console.log("IN LOGIN: ", payload)
-        User.find({user}, function (err, userer){
+        User.find({email: user}, function (err, userer){
                 if (err){return console.error(err)}
+                console.log("USERER: ", userer)
                 if (!userer[0]){
                     const newUser = new User({
                         email: user, 
@@ -112,10 +114,12 @@ gifs.on('connection', socket => {
                         friends:[],
                         created: new Date(),
                     })
-                    newUser.save(() => console.log("saving ", newUser))
-                    gifs.to(payload.socketid).emit('profile', newUser)
+                    console.log("NEWUSER: ", userer, newUser)
+                    newUser.save(()=> console.log("Saver"))
+                    gifs.emit('profile', newUser)
                 }else{
-                    gifs.to(payload.socketid).emit('profile', userer[0])
+                    console.log("FOUND USER: ", userer)
+                    gifs.emit('profile', userer[0])
                 }
             }
         
@@ -126,6 +130,7 @@ gifs.on('connection', socket => {
 
     //listen to new messages from clients
     socket.on('message', payload => {
+        console.log("HELLO THERE MESSAGE:, ", payload)
         //push the message to all other clients
         gifs.in(payload.room).emit('message', payload);
         console.log(payload);
@@ -135,7 +140,7 @@ gifs.on('connection', socket => {
     socket.on('leave', payload => {
 
         //Removes leaving user from room array
-        gifsRooms[payload.room] = gifsRooms[payload.room].filter(user => user !== payload.user);
+        gifsRooms[payload.room] = gifsRooms[payload.room].filter(user => user.user !== payload.user);
 
         //Sends participants to all clients in specific room
         let participants = gifsRooms[payload.room];

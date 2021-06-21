@@ -4,12 +4,12 @@ require('dotenv').config();
 const io = require('socket.io-client');
 
 // const HOST = process.env.HOST || "http://gifsms-env.eba-pn2gaatk.us-east-2.elasticbeanstalk.com";
-const HOST = process.env.HOSTT || "http://localhost:3000";
+const HOST = process.env.HOSTT || "http://localhost:3004";
 
 const socket = io.connect(HOST + "/gifs");
 
 socket.emit('message', { message: "Test Message", user: "John" });
-socket.emit('logingif', {user: "admin@admin.com"})
+// socket.emit('logingif', {user: "admin@admin.com"})
 
 const user = "Ted";
 const room = "My Private Room";
@@ -25,5 +25,5 @@ socket.on('message', payload => {
 });
 
 socket.on('profile', payload => {
-    console.log(payload);
+    console.log("profile: ", payload);
 }
