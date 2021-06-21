@@ -18,6 +18,7 @@ const User = require('./models/user.js');
 //connection to database
 const DATABASE = process.env.MONGO_URL
 const mongoose = require('mongoose');
+const { truncate } = require('fs/promises');
 mongoose.connect(DATABASE, { useNewUrlParser: true, useUnifiedTopology: true });
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));
@@ -90,21 +91,37 @@ gifs.on('connection', socket => {
                     })
                     console.log("NEWUSER: ", userer, newUser)
                     newUser.save(()=> console.log("Saver"))
-                    gifs.emit('profile', newUser)
+                    socket.emit('profile', newUser)
                 }else{
                     console.log("FOUND USER: ", userer)
-                    gifs.emit('profile', userer[0])
+                    socket.emit('profile', userer[0])
                 }
             }
     )})
 
     socket.on('update', payload => {
-        User.findOneAndUpdate({email: payload.email}, function (err, update){
-            if(err){return console.error(err)}
-            update = {...update, ...payload}
-            console.log("UPDATING: ", update, payload)
-            update.save(()=> console.log("updated profile: ", update, payload))
-        })
+        console.log("GOT UPDATE CALL:, ", payload);
+
+        // let step = User.findOneAndUpdate({email: payload.email}, {favorites: [...payload.favorites]}, {new: true});
+        User.find({email:payload.email}, function(err, selected){
+            if (err){return console.error(err)}
+
+            selected[0].favorites = [...payload.favorites]
+            console.log("FOUND FOR UPDATE: ", selected[0])
+            selected[0].save(() => selected)
+            socket.emit('updatecheck', selected[0])
+        });
+        // socket.emit('updatecheck', User.find({email: payload}))
+        //     , function (err, update){
+        //     if(err){return console.error(err)}
+        //     let test = update
+        //     test = {...test, payload}
+        //     update = {...update, ...payload}
+        //     socket.emit('updatecheck', test);
+        //     console.log("UPDATING: ", update, payload)
+        //     update.save(()=> console.log("updated profile: ", update, payload))
+        // })
+        // socket.emit('updatecheck', step)
     })
 
 
