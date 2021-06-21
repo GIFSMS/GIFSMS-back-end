@@ -111,17 +111,7 @@ gifs.on('connection', socket => {
             selected[0].save(() => selected)
             socket.emit('updatecheck', selected[0])
         });
-        // socket.emit('updatecheck', User.find({email: payload}))
-        //     , function (err, update){
-        //     if(err){return console.error(err)}
-        //     let test = update
-        //     test = {...test, payload}
-        //     update = {...update, ...payload}
-        //     socket.emit('updatecheck', test);
-        //     console.log("UPDATING: ", update, payload)
-        //     update.save(()=> console.log("updated profile: ", update, payload))
-        // })
-        // socket.emit('updatecheck', step)
+      
     })
 
 
