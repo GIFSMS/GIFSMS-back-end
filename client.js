@@ -4,7 +4,7 @@ require('dotenv').config();
 const io = require('socket.io-client');
 
 // const HOST = process.env.HOST || "http://gifsms-env.eba-pn2gaatk.us-east-2.elasticbeanstalk.com";
-const HOST = process.env.HOSTT || "http://localhost:3004";
+const HOST = process.env.HOST || "http://localhost:3004";
 
 const socket = io.connect(HOST + "/gifs");
 
