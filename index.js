@@ -18,7 +18,6 @@ const User = require('./models/user.js');
 //connection to database
 const DATABASE = process.env.MONGO_URL
 const mongoose = require('mongoose');
-const { truncate } = require('fs/promises');
 mongoose.connect(DATABASE, { useNewUrlParser: true, useUnifiedTopology: true });
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));
