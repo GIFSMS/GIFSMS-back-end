@@ -18,16 +18,13 @@ const User = require('./models/user.js');
 //connection to database
 const DATABASE = process.env.MONGO_URL
 const mongoose = require('mongoose');
-const { truncate } = require('fs/promises');
+// const { truncate } = require('fs/promises');
 mongoose.connect(DATABASE, { useNewUrlParser: true, useUnifiedTopology: true });
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));
 db.once('open', function () {
-  console.log('connected to the database!');
+    console.log('connected to the database!');
 });
-
-
-
 
 
 //Holds participants in each room
@@ -36,13 +33,9 @@ const gifsRooms = {};
 
 gifs.on('connection', socket => {
 
-
-
-    console.log('User Joined Chat:' + socket.id);
-
     //Function to have users join rooms
     socket.on('join', payload => {
-
+        console.log("Socket:", socket.id);
         //Initiates list of participants in specific rooms
         //If the room exists, push the joining user in the room array
         if (payload.room in gifsRooms) {
@@ -58,6 +51,9 @@ gifs.on('connection', socket => {
         console.log('Room: ', payload.room)
         console.log('User Joined: ', payload.user);
 
+        console.log(`gifRooms: ${payload.room}`, gifsRooms[payload.room]);
+        console.log('gifRooms: all', gifsRooms);
+
         //Joins the user to the room
         socket.join(payload.room);
 
@@ -72,46 +68,45 @@ gifs.on('connection', socket => {
         let rooms = Object.keys(gifsRooms);
         gifs.emit('get rooms', { rooms });
 
-
-
     });
 
     socket.on('logingif', payload => {
         let user = payload.user
         console.log("IN LOGIN: ", payload)
-        User.find({email: user}, function (err, userer){
-                if (err){return console.error(err)}
-                console.log("USERER: ", userer)
-                if (!userer[0]){
-                    const newUser = new User({
-                        email: user, 
-                        favorites: [],
-                        friends:[],
-                        created: new Date(),
-                    })
-                    console.log("NEWUSER: ", userer, newUser)
-                    newUser.save(()=> console.log("Saver"))
-                    socket.emit('profile', newUser)
-                }else{
-                    console.log("FOUND USER: ", userer)
-                    socket.emit('profile', userer[0])
-                }
+        User.find({ email: user }, function (err, userer) {
+            if (err) { return console.error(err) }
+            console.log("USERER: ", userer)
+            if (!userer[0]) {
+                const newUser = new User({
+                    email: user,
+                    favorites: [],
+                    friends: [],
+                    created: new Date(),
+                })
+                console.log("NEWUSER: ", userer, newUser)
+                newUser.save(() => console.log("Saver"))
+                socket.emit('profile', newUser)
+            } else {
+                console.log("FOUND USER: ", userer)
+                socket.emit('profile', userer[0])
             }
-    )})
+        }
+        )
+    })
 
     socket.on('update', payload => {
         console.log("GOT UPDATE CALL:, ", payload);
 
         // let step = User.findOneAndUpdate({email: payload.email}, {favorites: [...payload.favorites]}, {new: true});
-        User.find({email:payload.email}, function(err, selected){
-            if (err){return console.error(err)}
+        User.find({ email: payload.email }, function (err, selected) {
+            if (err) { return console.error(err) }
 
             selected[0].favorites = [...payload.favorites]
             console.log("FOUND FOR UPDATE: ", selected[0])
             selected[0].save(() => selected)
             socket.emit('updatecheck', selected[0])
         });
-      
+
     })
 
 
@@ -126,7 +121,7 @@ gifs.on('connection', socket => {
     socket.on('leave', payload => {
 
         //Removes leaving user from room array
-        gifsRooms[payload.room] = gifsRooms[payload.room].filter(user => user.user !== payload.user);
+        gifsRooms[payload.room] = gifsRooms[payload.room].filter(user => user !== payload.user);
 
         //Sends participants to all clients in specific room
         let participants = gifsRooms[payload.room];
@@ -137,16 +132,16 @@ gifs.on('connection', socket => {
 
         //When a user leaves a room, see if room is empty and delete room
         if (gifsRooms[payload.room].length === 0) {
-            if (gifsRooms[payload.room] !== "Main Room") {
+            if (payload.room !== "Main Room") {
                 delete gifsRooms[payload.room];
             }
         }
 
-    //     //Get List of rooms and send to all clients
+        //Get List of rooms and send to all clients
         let rooms = Object.keys(gifsRooms);
         gifs.emit('get rooms', { rooms });
 
-    //     //Handles removal of user from from
+        //Handles removal of user from from
         socket.leave(payload.room);
     });
 })
