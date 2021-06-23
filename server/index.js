@@ -40,19 +40,20 @@ gifs.on('connection', socket => {
         //If the room exists, push the joining user in the room array
         if (payload.room in gifsRooms) {
             //Checks for duplicate names in rooms
-            if (!gifsRooms[payload.room].includes(payload.user)) {
-                gifsRooms[payload.room].push(payload.user);
+            let duplicate = gifsRooms[payload.room].reduce((acc, userObj) => {
+                if (userObj.user === payload.userInfo.user) acc = true;
+                return acc
+            }, false)
+            if (!duplicate) {
+                gifsRooms[payload.room].push(payload.userInfo);
             }
         } else {
             //The room does not exist, create a new room array and add the user
-            gifsRooms[payload.room] = [payload.user];
+            gifsRooms[payload.room] = [payload.userInfo];
         }
 
         console.log('Room: ', payload.room)
-        console.log('User Joined: ', payload.user);
-
-        console.log(`gifRooms: ${payload.room}`, gifsRooms[payload.room]);
-        console.log('gifRooms: all', gifsRooms);
+        console.log('User Joined: ', payload.userInfo.user);
 
         //Joins the user to the room
         socket.join(payload.room);
@@ -121,7 +122,7 @@ gifs.on('connection', socket => {
     socket.on('leave', payload => {
 
         //Removes leaving user from room array
-        gifsRooms[payload.room] = gifsRooms[payload.room].filter(user => user !== payload.user);
+        gifsRooms[payload.room] = gifsRooms[payload.room].filter(user => user !== payload.userInfo.user);
 
         //Sends participants to all clients in specific room
         let participants = gifsRooms[payload.room];
